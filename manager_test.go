@@ -1,7 +1,6 @@
 package main
 
 import (
-	"fmt"
 	"testing"
 	"time"
 
@@ -9,8 +8,7 @@ import (
 	sg "github.com/wakeapp/go-sql-generator"
 )
 
-// 11.67s
-func BenchmarkInsertWithId(t *testing.B) {
+func BenchmarkInsertWithOptimize(t *testing.B) {
 	var err error
 	var m *SQLManager
 
@@ -22,19 +20,20 @@ func BenchmarkInsertWithId(t *testing.B) {
 
 	ti := time.Now()
 	var d = &sg.InsertData{
-		TableName: "Parsing",
+		TableName: "TestTable",
 		Fields: []string{
 			"id",
 			"time",
 		},
-		WithID: true,
 	}
+
+	d.SetOptimize(true)
 
 	var id string
 	for count := 1; count <= 10000; count++ {
-		id = fmt.Sprintf("%d", count)
-		d.AddWithID(
-			id,
+		id = idgen.Id()
+
+		d.Add(
 			[]string{
 				id,
 				ti.Format("2006-01-02 15:04:05"),
@@ -43,18 +42,18 @@ func BenchmarkInsertWithId(t *testing.B) {
 	}
 
 	t.ResetTimer()
-
-	t.StartTimer()
 	_, err = m.Insert(d)
 	if err != nil {
 		t.Fatalf("error on insert %s", err)
 	}
 	t.StopTimer()
 
-	m.Query("TRUNCATE TABLE Parsing")
+	_, err = m.Query("TRUNCATE TABLE TestTable")
+	if err != nil {
+		t.Fatalf("error on clean %s", err)
+	}
 }
 
-// 13.623s
 func BenchmarkInsert(t *testing.B) {
 	var err error
 	var m *SQLManager
@@ -67,31 +66,45 @@ func BenchmarkInsert(t *testing.B) {
 
 	ti := time.Now()
 	var d = &sg.InsertData{
-		TableName: "Parsing",
+		TableName: "TestTable",
 		Fields: []string{
 			"id",
 			"time",
 		},
-		WithID: false,
 	}
 
+	rev := func(s string) string {
+		runes := []rune(s)
+		size := len(runes)
+		for i := 0; i < size/2; i++ {
+			runes[size-i-1], runes[i] = runes[i], runes[size-i-1]
+		}
+		return string(runes)
+	}
+
+	var id string
 	for count := 1; count <= 10000; count++ {
+		id = idgen.Id()
+
+		id = rev(id)
+
 		d.Add(
 			[]string{
-				idgen.Id(),
+				id,
 				ti.Format("2006-01-02 15:04:05"),
 			},
 		)
 	}
 
 	t.ResetTimer()
-
-	t.StartTimer()
 	_, err = m.Insert(d)
 	if err != nil {
 		t.Fatalf("error on insert %s", err)
 	}
 	t.StopTimer()
 
-	m.Query("TRUNCATE TABLE Parsing")
+	_, err = m.Query("TRUNCATE TABLE TestTable")
+	if err != nil {
+		t.Fatalf("error on clean %s", err)
+	}
 }
