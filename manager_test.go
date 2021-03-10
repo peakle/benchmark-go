@@ -42,6 +42,7 @@ func BenchmarkInsertWithOptimize(t *testing.B) {
 	}
 
 	t.ResetTimer()
+	t.StartTimer()
 	_, err = m.Insert(d)
 	if err != nil {
 		t.Fatalf("error on insert %s", err)
@@ -97,6 +98,7 @@ func BenchmarkInsert(t *testing.B) {
 	}
 
 	t.ResetTimer()
+	t.StartTimer()
 	_, err = m.Insert(d)
 	if err != nil {
 		t.Fatalf("error on insert %s", err)
